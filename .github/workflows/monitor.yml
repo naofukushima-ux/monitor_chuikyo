@@ -2,7 +2,7 @@ name: Chuikyo-Monitor-Job
 
 on:
   push:                # ← これを追加
-  branches: [main]     # ← これを追加
+    branches: [main]     # ← これを追加
   schedule:
     - cron: '0 1 * * 3,5'
   workflow_dispatch:
