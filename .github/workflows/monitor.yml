@@ -5,7 +5,7 @@ on:
     branches: [main] 
   schedule:
     - cron: '58 0 * * 3,5'
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   run-bot:
