@@ -9,6 +9,9 @@ LINE_USER_ID = os.environ.get("LINE_USER_ID")
 DB_FILE = "last_url.txt"
 
 def send_line(message):
+    if not LINE_TOKEN or not LINE_USER_ID:
+        print("LINE設定が足りません")
+        return
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
         "Content-Type": "application/json",
@@ -26,13 +29,25 @@ def main():
     response.encoding = response.apparent_encoding
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # 中央社会保険医療協議会総会の最新リンクを探す
-    link_tag = soup.find("a", string=lambda s: s and "中央社会保険医療協議会総会" in s)
+    # 全ての <a> タグを調べて、テキストに「中央社会保険医療協議会総会」が含まれるものを探す
+    link_tag = None
+    for a in soup.find_all("a"):
+        text = a.get_text(strip=True) # タグ内のテキストをきれいに取得
+        if "中央社会保険医療協議会総会" in text:
+            link_tag = a
+            break # 最初に見つかった（最新の）リンクを採用
+
     if not link_tag:
-        print("リンクが見つかりませんでした")
+        print("リンクが見つかりませんでした。HTMLの構造が変わった可能性があります。")
         return
 
-    latest_url = "https://www.mhlw.go.jp" + link_tag.get("href")
+    href = link_tag.get("href")
+    # 相対パス（/stf/...）を絶対パスに変換
+    if href.startswith("http"):
+        latest_url = href
+    else:
+        latest_url = "https://www.mhlw.go.jp" + href
+        
     title = link_tag.get_text(strip=True)
 
     # 前回保存したURLと比較
@@ -48,7 +63,7 @@ def main():
         with open(DB_FILE, "w") as f:
             f.write(latest_url)
     else:
-        print("更新はありませんでした")
+        print("前回と同じURLのため、通知をスキップします。")
 
 if __name__ == "__main__":
     main()
