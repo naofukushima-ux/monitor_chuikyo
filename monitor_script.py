@@ -28,7 +28,7 @@ def get_latest_material_info():
         links = soup.select(".m-listLink a")
         
         if not links:
-            return None, None, False
+            return None, None, False, ""
 
         # 1件目（最新）の情報
         latest_link = links[0]
@@ -48,14 +48,16 @@ def get_latest_material_info():
         # 1件目が資料ページかどうか
         is_material_now = "資料" in latest_text
         
-        return latest_url, material_url, is_material_now
+        # 【変更点】判定用に最新のリンク文字（latest_text）も一緒に返します
+        return latest_url, material_url, is_material_now, latest_text
     except Exception as e:
         print(f"Error: {e}")
-        return None, None, False
+        return None, None, False, ""
 
 def main():
     print("更新チェック開始...")
-    latest_url, material_url, is_material_now = get_latest_material_info()
+    # 【変更点】latest_text を受け取るようにしました
+    latest_url, material_url, is_material_now, latest_text = get_latest_material_info()
     
     if not latest_url:
         return
@@ -74,7 +76,12 @@ def main():
     # 資料一覧URLが取得できていればそれを使う、なければ最新URLを使う
     display_url = material_url if material_url else latest_url
 
-    if not is_material_now:
+    # 【変更点】「議事録」という文字が含まれていた場合の処理を最優先で追加
+    if "議事録" in latest_text:
+        msg = f"今日、中医協総会のページに【議事録】の追加がありました！\n\n追加されたページ：\n{latest_url}"
+        send_line_message(msg)
+        
+    elif not is_material_now:
         # ② 更新はあったが、まだ開催案内の場合
         msg = f"今日、中医協総会の資料の更新（開催案内等）がありましたが、配布資料はまだ公開されていません。\n資料が公開されたらこちらに並びます：\n{display_url}"
         send_line_message(msg)
@@ -109,5 +116,6 @@ def main():
     # 履歴更新
     with open(STATUS_FILE, "w", encoding="utf-8") as f:
         f.write(latest_url)
+
 if __name__ == "__main__":
     main()
